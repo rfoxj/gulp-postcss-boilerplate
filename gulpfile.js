@@ -75,6 +75,27 @@ gulp.task('styles', () => {
     .pipe(gulp.dest('dist/styles'))
 });
 
+gulp.task('postcss', () => {
+  const processors = [
+    precss(),
+    lost,
+    postcssFlexbugsFixes,
+    postcssSVG({
+      paths: ['src/assets/svg'],
+      defaults: "[fill]: #000000"
+    }),
+    autoprefixer({browsers: ['last 70 versions']})
+  ];
+  return gulp.src('src/styles/styles.css')
+    .pipe(postcss(processors))
+    .pipe(cssnano({
+      discardComments: {
+        removeAll: false,
+      }
+    }))
+    .pipe(gulp.dest('dist/styles'))
+});
+
 gulp.task('markup', () => {
   nj.configure(['src/templates'], {watch: false});
   return gulp.src('src/html/**/*.+(html|nj|nunjucks)')
@@ -117,6 +138,7 @@ gulp.task('watch', function() {
   gulp.watch('src/html/**/*.+(html|nj|nunjucks)', ['markup', reload]);
   gulp.watch('src/data/**/*.+(json)', ['markup', reload]);
   gulp.watch('src/styles/**/*.css', ['styles', reload]);
+  gulp.watch('src/styles/**/*.pcss', ['postcss', reload]);
   gulp.watch(['src/scripts/**/*.js'], ['scripts', reload]);
   gulp.watch(['src/images/**/*.+(gif|jpg|png|svg)'], ['images', reload]);
   gulp.watch(['src/assets/**/*.+(gif|jpg|png|svg)'], ['assets', reload]);
@@ -135,6 +157,7 @@ gulp.task('sync', function() {
 gulp.task('server', [
   'markup',
   'styles',
+  'postcss',
   'lint:css',
   'images',
   'assets',
