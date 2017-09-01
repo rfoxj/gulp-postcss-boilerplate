@@ -6,3 +6,5 @@ const func = (someVar) => {
 };
 
 console.log(someVar);
+
+require('./modules/module.js');
