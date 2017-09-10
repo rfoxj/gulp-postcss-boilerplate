@@ -6,18 +6,13 @@ const concat     = require('gulp-concat');
 const uglify     = require('gulp-uglify');
 const rename     = require('gulp-rename');
 
-const postcss       = require('gulp-postcss');
-const precss        = require('precss');
+var sass = require('gulp-sass');
 const autoprefixer  = require('autoprefixer');
-const lost          = require('lost');
 // ^^^ awesome places to start ^^^
 
 const cssnano = require('gulp-cssnano');
-const postcssSVG = require('postcss-svg');
-const reporter = require('postcss-reporter');
-const stylelint = require('stylelint');
+const gulpStylelint = require('gulp-stylelint');
 
-const postcssFlexbugsFixes = require('postcss-flexbugs-fixes');
 const data = require('gulp-data');
 const htmlmin = require('gulp-htmlmin');
 
@@ -54,46 +49,13 @@ gulp.task('scripts', () => {
     .pipe(reload({stream:true}));
 });
 
-gulp.task('styles', () => {
-  const processors = [
-    precss(),
-    lost,
-    postcssFlexbugsFixes,
-    postcssSVG({
-      paths: ['src/assets/svg'],
-      defaults: "[fill]: #000000"
-    }),
-    autoprefixer({browsers: ['last 2 versions']})
-  ];
-  return gulp.src('src/styles/styles.css')
-    .pipe(postcss(processors))
+gulp.task('sass', function () {
+  return gulp.src('src/**/*.scss')
+    .pipe(sass())
     .pipe(cssnano({
-      discardComments: {
-        removeAll: false,
-      }
+      autoprefixer: {add: true}
     }))
-    .pipe(gulp.dest('dist/styles'))
-});
-
-gulp.task('postcss', () => {
-  const processors = [
-    precss(),
-    lost,
-    postcssFlexbugsFixes,
-    postcssSVG({
-      paths: ['src/assets/svg'],
-      defaults: "[fill]: #000000"
-    }),
-    autoprefixer({browsers: ['last 70 versions']})
-  ];
-  return gulp.src('src/styles/styles.css')
-    .pipe(postcss(processors))
-    .pipe(cssnano({
-      discardComments: {
-        removeAll: false,
-      }
-    }))
-    .pipe(gulp.dest('dist/styles'))
+    .pipe(gulp.dest('dist'));
 });
 
 gulp.task('markup', () => {
@@ -127,18 +89,18 @@ gulp.task('fonts', () => {
 
 gulp.task("lint:css", function () {
   return gulp.src("src/**/*.css")
-    .pipe(postcss([
-      stylelint({ /* your options */ }),
-      reporter({ clearMessages: true }),
-    ]))
+    .pipe(gulpStylelint({
+      reporters: [
+        {formatter: 'string', console: true}
+      ]
+    }));
 });
 
 gulp.task('watch', function() {
   gulp.watch('src/templates/**/*.+(html|nj|nunjucks)', ['markup', reload]);
   gulp.watch('src/html/**/*.+(html|nj|nunjucks)', ['markup', reload]);
   gulp.watch('src/data/**/*.+(json)', ['markup', reload]);
-  gulp.watch('src/styles/**/*.css', ['styles', reload]);
-  gulp.watch('src/styles/**/*.pcss', ['postcss', reload]);
+  gulp.watch('src/**/*.scss', ['sass', reload]);
   gulp.watch(['src/scripts/**/*.js'], ['scripts', reload]);
   gulp.watch(['src/images/**/*.+(gif|jpg|png|svg)'], ['images', reload]);
   gulp.watch(['src/assets/**/*.+(gif|jpg|png|svg)'], ['assets', reload]);
@@ -150,14 +112,13 @@ gulp.task('sync', function() {
     server: {
       baseDir: "./dist/"
     },
-    port: 3200
+    port: 3400
   });
 });
 
 gulp.task('server', [
   'markup',
-  'styles',
-  'postcss',
+  'sass',
   'lint:css',
   'images',
   'assets',
@@ -170,7 +131,7 @@ gulp.task('server', [
 
 gulp.task('default', [
   'markup',
-  'styles',
+  'sass',
   'images',
   'assets',
   'fonts',
